@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta derivada da logo — creme + azul-petróleo + couro + dourado */
+  --color-cream: #f2e8d3;
+  --color-cream-light: #fffdf7;
+  --color-petrol: #1f4e56;
+  --color-petrol-dark: #143a40;
+  --color-leather: #6b4226;
+  --color-gold: #b8863f;
+  --color-ink: #2b2621;
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  /* Site é sempre no tema claro — nunca respeitar prefers-color-scheme: dark */
+  color-scheme: light only;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+}
+
+/* Divisor-assinatura: página de livro aberto entre seções */
+.book-divider {
+  position: relative;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book-divider::before,
+.book-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+.book-divider::before { left: 0; }
+.book-divider::after { right: 0; }
+
+.book-divider span {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--color-gold);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-petrol);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
