@@ -92,8 +92,7 @@ export async function createEbook(
     file_path: pdfPath,
     page_count: pageCount ? parseInt(pageCount) : null,
     price_cents: priceCents,
-    status: "published",
-    published_at: new Date().toISOString(),
+      status: "published",
   });
 
   if (insertError) {
