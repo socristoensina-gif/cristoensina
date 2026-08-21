@@ -29,6 +29,12 @@ export default async function AdminPage() {
         >
           + Novo e-book
         </Link>
+        <Link
+          href="/admin/videos"
+          className="rounded-full border border-[var(--color-petrol)] px-5 py-2.5 text-sm font-semibold text-[var(--color-petrol)]"
+        >
+          Catálogo de Vídeos
+        </Link>
       </div>
 
       <div className="mt-8 divide-y divide-[var(--color-gold)]/20 rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-cream-light)]">

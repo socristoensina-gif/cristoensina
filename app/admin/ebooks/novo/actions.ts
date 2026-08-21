@@ -71,15 +71,23 @@ export async function createEbook(
   // 3. Upload da capa (bucket público), se enviada
   let coverUrl: string | null = null;
   if (coverFile && coverFile.size > 0) {
-    const coverPath = `${slug}/${Date.now()}-${coverFile.name}`;
+    const coverExt = coverFile.name.split(".").pop() || "jpg";
+    const coverPath = `${slug}/${Date.now()}-capa.${coverExt}`;
     const { error: coverUploadError } = await admin.storage
       .from("ebooks-covers")
-      .upload(coverPath, coverFile, { contentType: coverFile.type });
+      .upload(coverPath, coverFile, {
+        contentType: coverFile.type || "image/jpeg",
+        upsert: true,
+      });
 
-    if (!coverUploadError) {
-      const { data: publicUrl } = admin.storage.from("ebooks-covers").getPublicUrl(coverPath);
-      coverUrl = publicUrl.publicUrl;
+    if (coverUploadError) {
+      // antes isso era ignorado silenciosamente — agora retorna o erro real,
+      // para não cadastrar o e-book "pela metade" sem avisar o motivo
+      return { error: `Falha ao enviar a capa: ${coverUploadError.message}` };
     }
+
+    const { data: publicUrl } = admin.storage.from("ebooks-covers").getPublicUrl(coverPath);
+    coverUrl = publicUrl.publicUrl;
   }
 
   // 4. Cadastra o e-book
@@ -92,7 +100,7 @@ export async function createEbook(
     file_path: pdfPath,
     page_count: pageCount ? parseInt(pageCount) : null,
     price_cents: priceCents,
-      status: "published",
+    status: "published",
   });
 
   if (insertError) {
