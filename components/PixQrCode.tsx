@@ -14,22 +14,28 @@ const SUGGESTED_AMOUNTS = [10, 25, 50, 100];
 
 export default function PixQrCode({ pixKey, merchantName, merchantCity }: Props) {
   const [amount, setAmount] = useState<number | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [payload, setPayload] = useState<string>("");
   const [copied, setCopied] = useState(false);
+
+  const effectiveAmount = useCustom
+    ? parseFloat(customAmount.replace(",", ".")) || undefined
+    : (amount ?? undefined);
 
   useEffect(() => {
     const pixPayload = generatePixPayload({
       pixKey,
       merchantName,
       merchantCity,
-      amount: amount ?? undefined,
+      amount: effectiveAmount,
       description: "Oferta Jesus Ensina",
     });
     setPayload(pixPayload);
-
     QRCode.toDataURL(pixPayload, { width: 280, margin: 1 }).then(setQrDataUrl);
-  }, [amount, pixKey, merchantName, merchantCity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveAmount, pixKey, merchantName, merchantCity]);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(payload);
@@ -40,15 +46,18 @@ export default function PixQrCode({ pixKey, merchantName, merchantCity }: Props)
   return (
     <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-cream-light)] p-6 text-center shadow-sm">
       <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-gold)]">
-        Valor da oferta
+        Valor da oferta (opcional)
       </p>
       <div className="mt-3 flex flex-wrap justify-center gap-2">
         {SUGGESTED_AMOUNTS.map((value) => (
           <button
             key={value}
-            onClick={() => setAmount(value)}
+            onClick={() => {
+              setAmount(value);
+              setUseCustom(false);
+            }}
             className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
-              amount === value
+              !useCustom && amount === value
                 ? "border-[var(--color-petrol)] bg-[var(--color-petrol)] text-white"
                 : "border-[var(--color-gold)]/40 text-[var(--color-ink)]"
             }`}
@@ -57,16 +66,39 @@ export default function PixQrCode({ pixKey, merchantName, merchantCity }: Props)
           </button>
         ))}
         <button
-          onClick={() => setAmount(null)}
+          onClick={() => {
+            setAmount(null);
+            setUseCustom(false);
+          }}
           className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
-            amount === null
+            !useCustom && amount === null
               ? "border-[var(--color-petrol)] bg-[var(--color-petrol)] text-white"
               : "border-[var(--color-gold)]/40 text-[var(--color-ink)]"
           }`}
         >
-          Outro valor
+          Sem valor definido
         </button>
       </div>
+
+      <div className="mt-3">
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="Ou digite outro valor (ex: 37,50)"
+          value={customAmount}
+          onChange={(e) => {
+            setCustomAmount(e.target.value);
+            setUseCustom(true);
+          }}
+          onFocus={() => setUseCustom(true)}
+          className="w-full rounded-lg border border-[var(--color-gold)]/40 bg-white px-4 py-2 text-center outline-none focus:border-[var(--color-petrol)]"
+        />
+      </div>
+
+      <p className="mt-2 text-xs text-[var(--color-ink)]/60">
+        "Sem valor definido" gera um QR Code onde você digita o valor direto no app do
+        seu banco na hora de pagar.
+      </p>
 
       {qrDataUrl && (
         // eslint-disable-next-line @next/next/no-img-element

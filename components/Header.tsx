@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 const NAV_LINKS = [
+  { href: "/", label: "Início" },
   { href: "/videos", label: "Vídeos" },
   { href: "/loja", label: "E-books" },
   { href: "/gratis", label: "Materiais Grátis" },
@@ -41,6 +42,14 @@ export default function Header() {
         </nav>
 
         <Link
+          href="/carrinho"
+          className="hidden items-center gap-1 text-sm font-medium text-[var(--color-petrol)] md:flex"
+          aria-label="Ver carrinho"
+        >
+          🛒 Carrinho
+        </Link>
+
+        <Link
           href="/oferta"
           className="rounded-full bg-[var(--color-petrol)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-petrol-dark)] md:hidden"
         >
@@ -48,8 +57,7 @@ export default function Header() {
         </Link>
       </div>
 
-      {/* menu simplificado para celular — links visíveis sempre, sem esconder atrás de hambúrguer,
-          já que o público 40+ definido na estratégia tem menos familiaridade com ícones de menu */}
+      {/* menu simplificado para celular — links visíveis sempre, sem esconder atrás de hambúrguer */}
       <div className="flex gap-4 overflow-x-auto border-t border-[var(--color-gold)]/20 px-4 py-2 text-sm md:hidden">
         {NAV_LINKS.map((link) => (
           <Link
@@ -60,6 +68,9 @@ export default function Header() {
             {link.label}
           </Link>
         ))}
+        <Link href="/carrinho" className="whitespace-nowrap text-[var(--color-petrol)]">
+          🛒 Carrinho
+        </Link>
       </div>
     </header>
   );

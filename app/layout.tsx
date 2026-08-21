@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { CartProvider } from "@/components/CartProvider";
+import CookieConsent from "@/components/CookieConsent";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -30,9 +32,12 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${fraunces.variable} ${inter.variable}`}>
-        <Header />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <CartProvider>
+          <Header />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
+        </CartProvider>
+        <CookieConsent />
       </body>
     </html>
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getLatestVideos } from "@/lib/youtube";
+import ShareButtons from "@/components/ShareButtons";
 
 export const revalidate = 3600;
 
@@ -56,19 +57,36 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="flex justify-center">
-            <Image
-              src="/logo.png"
-              alt="Jesus Ensina"
-              width={340}
-              height={340}
-              priority
-              className="drop-shadow-xl"
-            />
+            <div className="relative h-80 w-80 overflow-hidden rounded-full border-4 border-[var(--color-gold)]/40 shadow-xl sm:h-96 sm:w-96">
+              <Image
+                src="/pastor.jpg"
+                alt="Pastor João Luiz Silva"
+                fill
+                priority
+                className="object-cover"
+              />
+            </div>
           </div>
         </div>
       </section>
 
       <div className="book-divider"><span>❧</span></div>
+
+      {/* AVISO — ÁREA DE MEMBROS EM BREVE */}
+      <section className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        <div className="rounded-2xl border-2 border-dashed border-[var(--color-gold)]/50 bg-[var(--color-gold)]/10 p-6 text-center">
+          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-leather)]">
+            Em breve
+          </p>
+          <p className="font-display mt-1 text-xl font-semibold text-[var(--color-petrol)]">
+            Área de Membros com Culto e Escola Dominical ao vivo
+          </p>
+          <p className="mt-2 text-sm text-[var(--color-ink)]/75">
+            Estamos preparando um espaço só para nossa comunidade se reunir aos domingos,
+            direto aqui no site. Fique de olho!
+          </p>
+        </div>
+      </section>
 
       {/* ANÚNCIOS DINÂMICOS — lives e campanhas */}
       {announcements && announcements.length > 0 && (
@@ -171,6 +189,19 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* COMPARTILHAR */}
+      <section className="mx-auto max-w-2xl px-4 py-12 text-center sm:px-6">
+        <h2 className="font-display text-xl font-semibold text-[var(--color-petrol)]">
+          Ajude essa mensagem a chegar mais longe
+        </h2>
+        <p className="mt-2 text-sm text-[var(--color-ink)]/70">
+          Compartilhe o Jesus Ensina com alguém que precisa ouvir isso hoje.
+        </p>
+        <div className="mt-5">
+          <ShareButtons />
+        </div>
+      </section>
 
       {/* CTA FINAL — OFERTA */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">

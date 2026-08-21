@@ -2,6 +2,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import EbookActionForm from "@/components/EbookActionForm";
+import ShareButtons from "@/components/ShareButtons";
 
 export const revalidate = 300;
 
@@ -15,7 +16,7 @@ export default async function EbookPage({
 
   const { data: ebook } = await supabase
     .from("ebooks")
-    .select("id, title, description, cover_image_url, price_cents, page_count, status")
+    .select("id, slug, title, description, cover_image_url, price_cents, page_count, status")
     .eq("slug", slug)
     .eq("status", "published")
     .single();
@@ -48,7 +49,17 @@ export default async function EbookPage({
           )}
 
           <div className="mt-8">
-            <EbookActionForm ebookId={ebook.id} isFree={isFree} priceLabel={priceLabel} />
+            <EbookActionForm
+              ebook={{
+                ebook_id: ebook.id,
+                slug: ebook.slug,
+                title: ebook.title,
+                price_cents: ebook.price_cents,
+                cover_image_url: ebook.cover_image_url,
+              }}
+              isFree={isFree}
+              priceLabel={priceLabel}
+            />
           </div>
 
           {!isFree && (
@@ -57,6 +68,13 @@ export default async function EbookPage({
               seu e-mail assim que a oferta for confirmada.
             </p>
           )}
+
+          <div className="mt-6">
+            <ShareButtons
+              url={`https://jesusensina.com.br/loja/${ebook.slug}`}
+              text={`Dá uma olhada em "${ebook.title}" no Jesus Ensina:`}
+            />
+          </div>
         </div>
       </div>
     </div>

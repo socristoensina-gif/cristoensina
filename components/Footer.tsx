@@ -13,7 +13,7 @@ export default function Footer() {
   return (
     <footer className="mt-16 border-t border-[var(--color-gold)]/30 bg-[var(--color-petrol)] text-[var(--color-cream-light)]">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-3">
+        <div className="grid gap-10 sm:grid-cols-4">
           <div>
             <p className="font-display text-lg font-semibold">Jesus Ensina</p>
             <p className="mt-2 text-sm text-[var(--color-cream-light)]/80">
@@ -45,6 +45,16 @@ export default function Footer() {
                   </a>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--color-gold)]">
+              Legal
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li><Link href="/privacidade" className="hover:underline">Política de Privacidade</Link></li>
+              <li><Link href="/termos" className="hover:underline">Termos de Uso</Link></li>
             </ul>
           </div>
         </div>
