@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractYoutubeId } from "@/lib/youtube-url";
+import { requireAdmin } from "@/lib/auth-admin";
 
 export interface NewVideoState {
   error?: string;
@@ -12,6 +13,8 @@ export async function createVideo(
   _prevState: NewVideoState,
   formData: FormData,
 ): Promise<NewVideoState> {
+  await requireAdmin(); // trava real, independente do middleware
+
   const title = formData.get("title")?.toString().trim() ?? "";
   const authorName = formData.get("author_name")?.toString().trim() || null;
   const category = formData.get("category")?.toString() ?? "";

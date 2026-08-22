@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth-admin";
 import { toggleVideoActive } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default async function AdminVideosPage() {
+  await requireAdmin();
+
   const supabase = await createClient();
   const { data: videos } = await supabase
     .from("videos")

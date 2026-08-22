@@ -2,8 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth-admin";
 
 export async function toggleVideoActive(formData: FormData) {
+  await requireAdmin(); // trava real, independente do middleware
+
   const id = formData.get("id")?.toString();
   const currentActive = formData.get("currentActive")?.toString() === "true";
   if (!id) return;

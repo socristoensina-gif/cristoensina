@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth-admin";
 
 function slugify(text: string): string {
   return text
@@ -20,6 +21,8 @@ export async function createEbook(
   _prevState: NewEbookState,
   formData: FormData,
 ): Promise<NewEbookState> {
+  await requireAdmin(); // trava real, independente do middleware
+
   const title = formData.get("title")?.toString().trim() ?? "";
   const description = formData.get("description")?.toString().trim() ?? "";
   const priceReais = formData.get("price")?.toString().trim() ?? "0";

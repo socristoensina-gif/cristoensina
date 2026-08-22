@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth-admin";
 import { toggleStatus, logout } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  await requireAdmin();
+
   const supabase = await createClient();
   const { data: ebooks } = await supabase
     .from("ebooks")
