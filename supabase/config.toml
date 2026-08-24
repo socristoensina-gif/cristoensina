@@ -1,0 +1,11 @@
+[functions.create-order]
+verify_jwt = false
+
+[functions.capture-lead]
+verify_jwt = false
+
+[functions.confirm-payment]
+verify_jwt = false
+
+[functions.download]
+verify_jwt = false

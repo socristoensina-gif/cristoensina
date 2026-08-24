@@ -1,14 +1,14 @@
 // supabase/functions/create-order/index.ts
 //
-// Recebe: { ebook_ids: string[], email, name? }  (compatível também com o formato antigo { ebook_id })
+// Recebe: { ebook_ids: string[], email, name? }
 // Faz: cria/atualiza o contato, cria o pedido (status=pending) + 1 item por e-book,
-//      gera uma preferência de checkout no Mercado Pago com TODOS os itens e devolve o link.
+//      gera um Checkout Redirecionado no PagSeguro com TODOS os itens e devolve o link.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const MP_ACCESS_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
+const PAGSEGURO_TOKEN = Deno.env.get("PAGSEGURO_TOKEN")!;
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://jesusensina.com.br";
 
 const corsHeaders = {
@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const email: string = body.email;
     const name: string | undefined = body.name;
-    // aceita tanto o formato novo (carrinho) quanto o antigo (1 e-book só), para não quebrar nada
     const ebookIds: string[] = body.ebook_ids ?? (body.ebook_id ? [body.ebook_id] : []);
 
     if (!email || ebookIds.length === 0) {
@@ -37,7 +36,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // 1. Busca todos os e-books de uma vez (garante que existem, publicados, com preço real do banco)
+    // 1. Busca todos os e-books de uma vez no banco
     const { data: ebooks, error: ebooksError } = await supabase
       .from("ebooks")
       .select("id, title, price_cents, status")
@@ -61,7 +60,7 @@ Deno.serve(async (req) => {
 
     const totalCents = paidEbooks.reduce((sum, e) => sum + e.price_cents, 0);
 
-    // 2. Cria ou atualiza o contato
+    // 2. Cria ou atualiza o contato no banco de dados
     const { data: contact, error: contactError } = await supabase
       .from("contacts")
       .upsert(
@@ -78,77 +77,113 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Cria o pedido
+    // 3. Cria o pedido inicial na tabela 'orders' com status 'pending'
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         contact_id: contact.id,
-        status: "pending",
         total_cents: totalCents,
-        payment_provider: "mercadopago",
+        status: "pending",
       })
       .select("id")
       .single();
 
     if (orderError || !order) {
-      return new Response(JSON.stringify({ error: "Falha ao criar pedido" }), {
+      return new Response(JSON.stringify({ error: "Falha ao gerar pedido no banco" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 4. Cria 1 item do pedido por e-book pago
-    await supabase.from("order_items").insert(
-      paidEbooks.map((e) => ({
-        order_id: order.id,
-        ebook_id: e.id,
-        unit_price_cents: e.price_cents,
-      })),
-    );
+    // 4. Vincula os itens do carrinho ao pedido gerado na tabela 'order_items'
+    const orderItemsPayload = paidEbooks.map((ebook) => ({
+      order_id: order.id,
+      ebook_id: ebook.id,
+      price_cents: ebook.price_cents,
+    }));
 
-    // 5. Cria a preferência de checkout no Mercado Pago, com todos os itens
-    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItemsPayload);
+
+    if (itemsError) {
+      return new Response(JSON.stringify({ error: "Falha ao vincular itens ao pedido" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 5. Monta os itens formatados exigidos pela API do PagSeguro v4
+    // O PagSeguro pede o valor unitário (unit_amount) em centavos inteiros
+    const pagSeguroItems = paidEbooks.map((ebook) => ({
+      reference_id: ebook.id,
+      name: ebook.title,
+      quantity: 1,
+      unit_amount: ebook.price_cents,
+    }));
+
+    // 6. Faz a chamada HTTP para gerar a sessão de checkout no PagSeguro
+    const pagSeguroPayload = {
+      reference_id: order.id, // ID do pedido para bater com o webhook depois
+      customer: {
+        name: name || "Cliente Cristo Ensina",
+        email: email,
+      },
+      items: pagSeguroItems,
+      payment_methods: [
+        { type: "PIX" },
+        { type: "CREDIT_CARD" },
+        { type: "BOLETO" }
+      ],
+      redirect_url: `${SITE_URL}/sucesso?order_id=${order.id}`,
+    };
+
+    const pagSeguroRes = await fetch("https://pagseguro.com", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        "Authorization": `Bearer ${PAGSEGURO_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        items: paidEbooks.map((e) => ({
-          title: `${e.title} — Oferta para o Projeto Jesus Ensina`,
-          quantity: 1,
-          unit_price: e.price_cents / 100,
-          currency_id: "BRL",
-        })),
-        payer: { email },
-        external_reference: order.id,
-        back_urls: {
-          success: `${SITE_URL}/obrigado?order=${order.id}`,
-          failure: `${SITE_URL}/carrinho?erro=pagamento`,
-          pending: `${SITE_URL}/obrigado?order=${order.id}&status=pendente`,
-        },
-        auto_return: "approved",
-        notification_url: `${SUPABASE_URL}/functions/v1/confirm-payment`,
-      }),
+      body: JSON.stringify(pagSeguroPayload),
     });
 
-    const mpData = await mpResponse.json();
+    // Nota: Se for usar ambiente de testes, mude a URL acima para: https://pagseguro.com
 
-    if (!mpResponse.ok) {
+    const pagSeguroData = await pagSeguroRes.json();
+
+    if (!pagSeguroRes.ok) {
+      console.error("Erro PagSeguro:", pagSeguroData);
       return new Response(
-        JSON.stringify({ error: "Falha ao criar checkout no Mercado Pago", details: mpData }),
+        JSON.stringify({ error: "Falha ao gerar link de pagamento no PagSeguro" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Procura o link correto de redirecionamento retornado pelo PagSeguro
+    const checkoutUrl = pagSeguroData.links?.find((l: any) => l.rel === "PAY")?.href;
+
+    if (!checkoutUrl) {
+      return new Response(
+        JSON.stringify({ error: "Link de pagamento não retornado pelo provedor" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    await supabase.from("orders").update({ payment_provider_id: mpData.id }).eq("id", order.id);
+    // Salva a URL e identificador externo no pedido para controle
+    await supabase
+      .from("orders")
+      .update({ payment_provider_id: pagSeguroData.id })
+      .eq("id", order.id);
 
+    // Retorna a URL para o seu front-end (carrinho/page.tsx) fazer o redirecionamento imediato
     return new Response(
-      JSON.stringify({ checkout_url: mpData.init_point, order_id: order.id }),
+      JSON.stringify({ checkout_url: checkoutUrl, order_id: order.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
+    console.error("Erro interno na função:", err);
+    return new Response(JSON.stringify({ error: "Erro interno no servidor" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

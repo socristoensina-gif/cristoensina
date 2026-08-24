@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import ShareButtons from "@/components/ShareButtons";
 
 const NAV_LINKS = [
   { href: "/", label: "Início" },
@@ -41,13 +42,16 @@ export default function Header() {
           ))}
         </nav>
 
-        <Link
-          href="/carrinho"
-          className="hidden items-center gap-1 text-sm font-medium text-[var(--color-petrol)] md:flex"
-          aria-label="Ver carrinho"
-        >
-          🛒 Carrinho
-        </Link>
+        <div className="hidden items-center gap-4 md:flex">
+          <ShareButtons compact />
+          <Link
+            href="/carrinho"
+            className="flex items-center gap-1 text-sm font-medium text-[var(--color-petrol)]"
+            aria-label="Ver carrinho"
+          >
+            🛒
+          </Link>
+        </div>
 
         <Link
           href="/oferta"
@@ -57,8 +61,12 @@ export default function Header() {
         </Link>
       </div>
 
-      {/* menu simplificado para celular — links visíveis sempre, sem esconder atrás de hambúrguer */}
-      <div className="flex gap-4 overflow-x-auto border-t border-[var(--color-gold)]/20 px-4 py-2 text-sm md:hidden">
+      {/* linha de compartilhamento + carrinho, visível sempre no topo direito */}
+      <div className="hidden justify-end gap-3 border-t border-[var(--color-gold)]/10 px-4 py-1.5 sm:px-6 md:hidden">
+      </div>
+
+      {/* menu simplificado para celular */}
+      <div className="flex items-center gap-4 overflow-x-auto border-t border-[var(--color-gold)]/20 px-4 py-2 text-sm md:hidden">
         {NAV_LINKS.map((link) => (
           <Link
             key={link.href}
@@ -71,6 +79,9 @@ export default function Header() {
         <Link href="/carrinho" className="whitespace-nowrap text-[var(--color-petrol)]">
           🛒 Carrinho
         </Link>
+        <div className="flex-shrink-0">
+          <ShareButtons compact />
+        </div>
       </div>
     </header>
   );
