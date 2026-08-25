@@ -21,7 +21,7 @@ export default function CarrinhoPage() {
     setError("");
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-order`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-asaas-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
