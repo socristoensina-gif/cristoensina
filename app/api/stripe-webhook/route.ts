@@ -6,6 +6,10 @@ import { stripe } from '@/lib/stripe'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// ============================================================
+// VARIÁVEIS DE AMBIENTE
+// ============================================================
+
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -27,22 +31,34 @@ const FROM_EMAIL =
   process.env.FROM_EMAIL ||
   'contato@jesusensina.com.br'
 
+// ============================================================
+// RESPOSTA DE ERRO
+// ============================================================
+
 function errorResponse(
   message: string,
   status: number,
 ) {
   return NextResponse.json(
-    { error: message },
-    { status },
+    {
+      error: message,
+    },
+    {
+      status,
+    },
   )
 }
+
+// ============================================================
+// WEBHOOK STRIPE
+// ============================================================
 
 export async function POST(
   request: Request,
 ) {
-  // ============================================================
+  // ==========================================================
   // 1. VALIDAR CONFIGURAÇÃO
-  // ============================================================
+  // ==========================================================
 
   if (
     !SUPABASE_URL ||
@@ -69,14 +85,20 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 2. VALIDAR ASSINATURA DO STRIPE
-  // ============================================================
+  // ==========================================================
+  // 2. VALIDAR ASSINATURA STRIPE
+  // ==========================================================
 
   const signature =
-    request.headers.get('stripe-signature')
+    request.headers.get(
+      'stripe-signature',
+    )
 
   if (!signature) {
+    console.error(
+      'Webhook recebido sem assinatura Stripe.',
+    )
+
     return errorResponse(
       'Assinatura Stripe ausente.',
       400,
@@ -113,9 +135,9 @@ export async function POST(
     event.id,
   )
 
-  // ============================================================
-  // 3. PROCESSAR SOMENTE PAGAMENTOS RELEVANTES
-  // ============================================================
+  // ==========================================================
+  // 3. EVENTOS ACEITOS
+  // ==========================================================
 
   const acceptedEvents = [
     'checkout.session.completed',
@@ -127,6 +149,11 @@ export async function POST(
       event.type,
     )
   ) {
+    console.log(
+      'Evento Stripe ignorado:',
+      event.type,
+    )
+
     return NextResponse.json({
       received: true,
       ignored: true,
@@ -138,10 +165,13 @@ export async function POST(
     event.data
       .object as Stripe.Checkout.Session
 
-  // checkout.session.completed também pode acontecer
-  // antes da confirmação final em alguns meios assíncronos.
+  // ==========================================================
+  // 4. CONFIRMAR QUE O PAGAMENTO ESTÁ PAGO
+  // ==========================================================
+
   if (
-    session.payment_status !== 'paid'
+    session.payment_status !==
+    'paid'
   ) {
     console.log(
       'Sessão ainda não paga:',
@@ -157,9 +187,9 @@ export async function POST(
     })
   }
 
-  // ============================================================
-  // 4. IDENTIFICAR O PEDIDO
-  // ============================================================
+  // ==========================================================
+  // 5. IDENTIFICAR PEDIDO
+  // ==========================================================
 
   const orderId =
     session.metadata?.order_id ||
@@ -177,15 +207,30 @@ export async function POST(
     )
   }
 
+  console.log(
+    'Pedido identificado:',
+    orderId,
+  )
+
+  // ==========================================================
+  // 6. CLIENTE SUPABASE
+  // ==========================================================
+
   const supabase =
     createClient(
       SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      },
     )
 
-  // ============================================================
-  // 5. BUSCAR PEDIDO E CONTATO
-  // ============================================================
+  // ==========================================================
+  // 7. BUSCAR PEDIDO + CONTATO
+  // ==========================================================
 
   const {
     data: order,
@@ -205,7 +250,10 @@ export async function POST(
         name
       )
     `)
-    .eq('id', orderId)
+    .eq(
+      'id',
+      orderId,
+    )
     .single()
 
   if (
@@ -224,13 +272,23 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 6. IDEMPOTÊNCIA
-  // ============================================================
+  // ==========================================================
+  // 8. IDEMPOTÊNCIA
+  //
+  // IMPORTANTE:
+  //
+  // Nesta nova versão, o pedido só é marcado como "paid"
+  // DEPOIS que o Resend aceita o e-mail.
+  //
+  // Portanto, se encontramos status paid aqui, podemos
+  // considerar que o fluxo já foi concluído.
+  // ==========================================================
 
-  if (order.status === 'paid') {
+  if (
+    order.status === 'paid'
+  ) {
     console.log(
-      'Pedido já processado:',
+      'Pedido já processado anteriormente:',
       order.id,
     )
 
@@ -242,9 +300,9 @@ export async function POST(
     })
   }
 
-  // ============================================================
-  // 7. VALIDAR PROVIDER
-  // ============================================================
+  // ==========================================================
+  // 9. VALIDAR GATEWAY
+  // ==========================================================
 
   if (
     order.payment_provider !==
@@ -262,24 +320,32 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 8. VALIDAR VALOR PAGO
-  // ============================================================
+  // ==========================================================
+  // 10. VALIDAR VALOR
+  // ==========================================================
 
   const stripeAmount =
-    Number(session.amount_total ?? 0)
+    Number(
+      session.amount_total ?? 0,
+    )
 
   const orderAmount =
-    Number(order.total_cents ?? 0)
+    Number(
+      order.total_cents ?? 0,
+    )
 
   if (
-    stripeAmount !== orderAmount
+    stripeAmount !==
+    orderAmount
   ) {
     console.error(
       'Valor Stripe diferente do pedido:',
       {
-        order_id: order.id,
+        order_id:
+          order.id,
+
         stripeAmount,
+
         orderAmount,
       },
     )
@@ -290,9 +356,9 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 9. BUSCAR E-BOOKS DO PEDIDO
-  // ============================================================
+  // ==========================================================
+  // 11. BUSCAR ITENS / E-BOOKS DO PEDIDO
+  // ==========================================================
 
   const {
     data: orderItems,
@@ -331,6 +397,10 @@ export async function POST(
     )
   }
 
+  // ==========================================================
+  // 12. IDENTIFICAR CONTATO
+  // ==========================================================
+
   const contact: any =
     Array.isArray(
       order.contacts,
@@ -353,53 +423,108 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 10. GERAR TOKENS DE DOWNLOAD
-  // ============================================================
+  console.log(
+    'Comprador identificado:',
+    {
+      order_id:
+        order.id,
 
-  const downloadsToCreate: {
-  contact_id: string
-  ebook_id: string
-}[] = orderItems
-  .map((item: any) => {
-    const ebook =
-      Array.isArray(item.ebooks)
-        ? item.ebooks[0]
-        : item.ebooks
+      contact_id:
+        contact.id,
 
-    if (!ebook?.id) {
-      return null
-    }
-
-    return {
-      contact_id: String(contact.id),
-      ebook_id: String(ebook.id),
-    }
-  })
-  .filter(
-    (
-      item,
-    ): item is {
-      contact_id: string
-      ebook_id: string
-    } => item !== null,
+      email:
+        contact.email,
+    },
   )
 
+  // ==========================================================
+  // 13. VALIDAR RESEND ANTES DE ALTERAR O PEDIDO
+  // ==========================================================
+
+  if (!RESEND_API_KEY) {
+    console.error(
+      'RESEND_API_KEY não configurada.',
+    )
+
+    return errorResponse(
+      'Pagamento recebido, mas o serviço de e-mail não está configurado.',
+      500,
+    )
+  }
+
+  // ==========================================================
+  // 14. PREPARAR DOWNLOADS
+  // ==========================================================
+
+  const downloadsToCreate: {
+    contact_id: string
+    ebook_id: string
+  }[] = orderItems
+    .map(
+      (
+        item: any,
+      ) => {
+        const ebook =
+          Array.isArray(
+            item.ebooks,
+          )
+            ? item.ebooks[0]
+            : item.ebooks
+
+        if (!ebook?.id) {
+          return null
+        }
+
+        return {
+          contact_id:
+            String(
+              contact.id,
+            ),
+
+          ebook_id:
+            String(
+              ebook.id,
+            ),
+        }
+      },
+    )
+    .filter(
+      (
+        item,
+      ): item is {
+        contact_id: string
+        ebook_id: string
+      } =>
+        item !== null,
+    )
+
   if (
-    downloadsToCreate.length === 0
+    downloadsToCreate.length ===
+    0
   ) {
+    console.error(
+      'Nenhum download válido encontrado para o pedido:',
+      order.id,
+    )
+
     return errorResponse(
       'Nenhum download pôde ser criado.',
       500,
     )
   }
 
+  // ==========================================================
+  // 15. CRIAR TOKENS DE DOWNLOAD
+  // ==========================================================
+
   const {
     data: downloads,
     error: downloadsError,
   } = await supabase
     .from('downloads')
-    .insert(downloadsToCreate)
+    .insert(
+      downloadsToCreate,
+    )
     .select(
       'id, token, ebook_id',
     )
@@ -420,115 +545,155 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 11. PREPARAR LINKS PARA O RESEND
-  // ============================================================
+  console.log(
+    'Downloads criados:',
+    {
+      order_id:
+        order.id,
 
-  const downloadLinks =
-    downloads
-      .map((download: any) => {
-        const item: any =
-          orderItems.find(
-            (orderItem: any) =>
-              orderItem.ebook_id ===
-              download.ebook_id,
+      quantidade:
+        downloads.length,
+    },
+  )
+
+  // ==========================================================
+  // FUNÇÃO DE LIMPEZA
+  //
+  // Se o Resend falhar, apagamos SOMENTE os tokens criados
+  // nesta tentativa.
+  //
+  // O pedido permanece pendente e o Stripe poderá tentar
+  // entregar novamente o webhook.
+  // ==========================================================
+
+  const cleanupDownloads =
+    async () => {
+      const downloadIds =
+        downloads
+          .map(
+            (
+              download: any,
+            ) =>
+              download.id,
           )
+          .filter(Boolean)
 
-        const ebook =
-          Array.isArray(
-            item?.ebooks,
-          )
-            ? item.ebooks[0]
-            : item?.ebooks
+      if (
+        downloadIds.length ===
+        0
+      ) {
+        return
+      }
 
-        if (
-          !ebook ||
-          !download.token
-        ) {
-          return ''
-        }
-
-        const url =
-          `${SITE_URL}/download/${download.token}`
-
-        return `
-          <li style="margin-bottom:16px;">
-            <strong>
-              ${ebook.title}
-            </strong>
-            <br />
-            <a href="${url}">
-              Baixar e-book
-            </a>
-          </li>
-        `
-      })
-      .filter(Boolean)
-      .join('')
-
-  // ============================================================
-  // 12. MARCAR PEDIDO COMO PAGO
-  // ============================================================
-
-  const {
-    error: updateError,
-  } = await supabase
-    .from('orders')
-    .update({
-      status: 'paid',
-      payment_provider:
-        'stripe',
-      payment_provider_id:
-        session.id,
-    })
-    .eq('id', order.id)
-
-  if (updateError) {
-    console.error(
-      'Erro ao marcar pedido como pago:',
-      updateError,
-    )
-
-    // Evita deixar tokens válidos se o pedido
-    // não conseguiu ser confirmado.
-    const downloadIds =
-      downloads.map(
-        (download: any) =>
-          download.id,
-      )
-
-    if (
-      downloadIds.length > 0
-    ) {
-      await supabase
+      const {
+        error:
+          cleanupError,
+      } = await supabase
         .from('downloads')
         .delete()
         .in(
           'id',
           downloadIds,
         )
+
+      if (cleanupError) {
+        console.error(
+          'Falha ao remover downloads temporários:',
+          cleanupError,
+        )
+      } else {
+        console.log(
+          'Downloads temporários removidos após falha.',
+        )
+      }
     }
 
-    return errorResponse(
-      'Falha ao confirmar o pedido.',
-      500,
-    )
-  }
+  // ==========================================================
+  // 16. MONTAR LINKS
+  // ==========================================================
 
-  // ============================================================
-  // 13. ENVIAR E-MAIL VIA RESEND
-  // ============================================================
+  const downloadLinks =
+    downloads
+      .map(
+        (
+          download: any,
+        ) => {
+          const item: any =
+            orderItems.find(
+              (
+                orderItem: any,
+              ) =>
+                String(
+                  orderItem.ebook_id,
+                ) ===
+                String(
+                  download.ebook_id,
+                ),
+            )
 
-  if (!RESEND_API_KEY) {
+          const ebook =
+            Array.isArray(
+              item?.ebooks,
+            )
+              ? item.ebooks[0]
+              : item?.ebooks
+
+          if (
+            !ebook ||
+            !download.token
+          ) {
+            return ''
+          }
+
+          const url =
+            `${SITE_URL}/download/${download.token}`
+
+          return `
+            <li style="margin-bottom:20px;">
+              <strong style="font-size:16px;">
+                ${ebook.title}
+              </strong>
+
+              <br />
+
+              <a
+                href="${url}"
+                style="
+                  display:inline-block;
+                  margin-top:8px;
+                  padding:10px 16px;
+                  background:#111827;
+                  color:#ffffff;
+                  text-decoration:none;
+                  border-radius:6px;
+                  font-weight:bold;
+                "
+              >
+                Baixar e-book
+              </a>
+            </li>
+          `
+        },
+      )
+      .filter(Boolean)
+      .join('')
+
+  if (!downloadLinks) {
     console.error(
-      'RESEND_API_KEY não configurada.',
+      'Não foi possível montar os links dos e-books.',
     )
 
+    await cleanupDownloads()
+
     return errorResponse(
-      'Pagamento confirmado, mas o serviço de e-mail não está configurado.',
+      'Falha ao preparar links de download.',
       500,
     )
   }
+
+  // ==========================================================
+  // 17. PREPARAR E-MAIL
+  // ==========================================================
 
   const firstName =
     contact.name
@@ -536,12 +701,15 @@ export async function POST(
       : ''
 
   const emailHtml = `
-    <div style="
-      font-family:Arial,sans-serif;
-      max-width:600px;
-      margin:auto;
-      line-height:1.6;
-    ">
+    <div
+      style="
+        font-family:Arial,Helvetica,sans-serif;
+        max-width:600px;
+        margin:0 auto;
+        line-height:1.6;
+        color:#222222;
+      "
+    >
       <h2>
         Pagamento confirmado — Jesus Ensina
       </h2>
@@ -563,61 +731,115 @@ export async function POST(
         Seus e-books
       </h3>
 
-      <ul>
+      <ul style="padding-left:20px;">
         ${downloadLinks}
       </ul>
 
       <p>
-        Os links ficam disponíveis conforme
-        as regras de download do Jesus Ensina.
+        Clique no botão correspondente para acessar
+        o seu material.
       </p>
 
       <p>
-        Obrigado por apoiar o projeto
-        Jesus Ensina.
+        Os links ficam disponíveis conforme as regras
+        de download do Jesus Ensina.
+      </p>
+
+      <p>
+        Obrigado por apoiar o projeto Jesus Ensina.
       </p>
     </div>
   `
 
-  const resendResponse =
-    await fetch(
-      'https://api.resend.com/emails',
-      {
-        method: 'POST',
+  // ==========================================================
+  // 18. ENVIAR PELO RESEND
+  // ==========================================================
 
-        headers: {
-          Authorization:
-            `Bearer ${RESEND_API_KEY}`,
-          'Content-Type':
-            'application/json',
+  let resendResponse: Response
+
+  try {
+    resendResponse =
+      await fetch(
+        'https://api.resend.com/emails',
+        {
+          method:
+            'POST',
+
+          headers: {
+            Authorization:
+              `Bearer ${RESEND_API_KEY}`,
+
+            'Content-Type':
+              'application/json',
+          },
+
+          body:
+            JSON.stringify({
+              from:
+                `Jesus Ensina <${FROM_EMAIL}>`,
+
+              to: [
+                contact.email,
+              ],
+
+              subject:
+                'Pagamento confirmado — seus e-books',
+
+              html:
+                emailHtml,
+            }),
         },
-
-        body: JSON.stringify({
-          from:
-            `Jesus Ensina <${FROM_EMAIL}>`,
-
-          to: [
-            contact.email,
-          ],
-
-          subject:
-            'Pagamento confirmado — seus e-books',
-
-          html:
-            emailHtml,
-        }),
-      },
+      )
+  } catch (error) {
+    console.error(
+      'Erro de comunicação com o Resend:',
+      error,
     )
 
-  if (!resendResponse.ok) {
+    await cleanupDownloads()
+
+    return errorResponse(
+      'Pagamento confirmado pelo Stripe, mas não foi possível contactar o serviço de e-mail.',
+      500,
+    )
+  }
+
+  // ==========================================================
+  // 19. VERIFICAR RESPOSTA DO RESEND
+  // ==========================================================
+
+  if (
+    !resendResponse.ok
+  ) {
     const resendData =
-      await resendResponse.text()
+      await resendResponse
+        .text()
 
     console.error(
       'Resend rejeitou o e-mail:',
-      resendResponse.status,
-      resendData,
+      {
+        status:
+          resendResponse.status,
+
+        resposta:
+          resendData,
+
+        email:
+          contact.email,
+
+        order_id:
+          order.id,
+      },
     )
+
+    // MUITO IMPORTANTE:
+    //
+    // Não deixamos os downloads desta tentativa acumularem
+    // e NÃO marcamos o pedido como paid.
+    //
+    // Assim o Stripe pode tentar novamente.
+
+    await cleanupDownloads()
 
     return errorResponse(
       'Pagamento confirmado, mas houve falha no envio do e-mail.',
@@ -625,30 +847,140 @@ export async function POST(
     )
   }
 
-  // ============================================================
-  // 14. FINAL
-  // ============================================================
+  // ==========================================================
+  // 20. RESEND ACEITOU O E-MAIL
+  // ==========================================================
+
+  let resendResult: any = null
+
+  try {
+    resendResult =
+      await resendResponse
+        .json()
+  } catch {
+    // Não interromper o fluxo se a resposta não puder
+    // ser convertida para JSON.
+  }
 
   console.log(
-    'Pedido Stripe processado:',
+    'E-mail aceito pelo Resend:',
     {
       order_id:
         order.id,
-      session_id:
-        session.id,
+
       email:
         contact.email,
+
+      resend_id:
+        resendResult?.id ??
+        null,
+    },
+  )
+
+  // ==========================================================
+  // 21. SOMENTE AGORA MARCAR PEDIDO COMO PAGO
+  //
+  // ESTA É A CORREÇÃO PRINCIPAL.
+  //
+  // O pedido NÃO fica "paid" antes do Resend aceitar
+  // o e-mail.
+  // ==========================================================
+
+  const {
+    error: updateError,
+  } = await supabase
+    .from('orders')
+    .update({
+      status:
+        'paid',
+
+      payment_provider:
+        'stripe',
+
+      payment_provider_id:
+        session.id,
+    })
+    .eq(
+      'id',
+      order.id,
+    )
+
+  if (updateError) {
+    console.error(
+      'ATENÇÃO: E-mail enviado, mas houve erro ao marcar pedido como pago:',
+      {
+        order_id:
+          order.id,
+
+        session_id:
+          session.id,
+
+        error:
+          updateError,
+      },
+    )
+
+    /*
+      NÃO removemos os tokens aqui.
+
+      Motivo:
+      neste ponto o Resend JÁ aceitou o e-mail
+      e o cliente recebeu links que dependem
+      desses tokens.
+
+      Apagá-los faria o cliente receber links
+      inválidos.
+    */
+
+    return errorResponse(
+      'E-mail enviado, mas houve falha ao atualizar o pedido.',
+      500,
+    )
+  }
+
+  // ==========================================================
+  // 22. SUCESSO FINAL
+  // ==========================================================
+
+  console.log(
+    'Pedido Stripe processado com sucesso:',
+    {
+      order_id:
+        order.id,
+
+      session_id:
+        session.id,
+
+      email:
+        contact.email,
+
       ebooks:
         downloads.length,
+
+      resend_id:
+        resendResult?.id ??
+        null,
     },
   )
 
   return NextResponse.json({
-    received: true,
-    paid: true,
+    received:
+      true,
+
+    paid:
+      true,
+
+    email_sent:
+      true,
+
     order_id:
       order.id,
+
     downloads:
       downloads.length,
+
+    resend_id:
+      resendResult?.id ??
+      null,
   })
 }
