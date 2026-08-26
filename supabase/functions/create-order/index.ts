@@ -1,191 +1,405 @@
-// supabase/functions/create-order/index.ts
-//
-// Recebe: { ebook_ids: string[], email, name? }
-// Faz: cria/atualiza o contato, cria o pedido (status=pending) + 1 item por e-book,
-//      gera um Checkout Redirecionado no PagSeguro com TODOS os itens e devolve o link.
-
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const PAGSEGURO_TOKEN = Deno.env.get("PAGSEGURO_TOKEN")!;
-const SITE_URL = Deno.env.get("SITE_URL") ?? "https://jesusensina.com.br";
+const SITE_URL = Deno.env.get("SITE_URL") ?? "https://www.jesusensina.com.br";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status = 200,
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse(
+      { error: "Método não permitido" },
+      405,
+    );
   }
 
   try {
+    if (!PAGSEGURO_TOKEN) {
+      console.error("PAGSEGURO_TOKEN não configurado");
+
+      return jsonResponse(
+        { error: "Gateway de pagamento não configurado" },
+        500,
+      );
+    }
+
     const body = await req.json();
-    const email: string = body.email;
-    const name: string | undefined = body.name;
-    const ebookIds: string[] = body.ebook_ids ?? (body.ebook_id ? [body.ebook_id] : []);
+
+    const email = String(body.email ?? "").trim();
+    const name = body.name
+      ? String(body.name).trim()
+      : null;
+
+    const ebookIds: string[] = Array.isArray(body.ebook_ids)
+      ? body.ebook_ids
+      : body.ebook_id
+        ? [String(body.ebook_id)]
+        : [];
 
     if (!email || ebookIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "email e ao menos 1 ebook_id são obrigatórios" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return jsonResponse(
+        {
+          error:
+            "E-mail e ao menos 1 e-book são obrigatórios.",
+        },
+        400,
       );
     }
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    // 1. Busca todos os e-books de uma vez no banco
-    const { data: ebooks, error: ebooksError } = await supabase
-      .from("ebooks")
-      .select("id, title, price_cents, status")
-      .in("id", ebookIds)
-      .eq("status", "published");
-
-    if (ebooksError || !ebooks || ebooks.length === 0) {
-      return new Response(JSON.stringify({ error: "Nenhum e-book válido encontrado" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const paidEbooks = ebooks.filter((e) => e.price_cents > 0);
-    if (paidEbooks.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Os itens selecionados são gratuitos, use a função capture-lead" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const totalCents = paidEbooks.reduce((sum, e) => sum + e.price_cents, 0);
-
-    // 2. Cria ou atualiza o contato no banco de dados
-    const { data: contact, error: contactError } = await supabase
-      .from("contacts")
-      .upsert(
-        { email, name: name ?? null, source: "checkout-carrinho" },
-        { onConflict: "email", ignoreDuplicates: false },
-      )
-      .select("id")
-      .single();
-
-    if (contactError || !contact) {
-      return new Response(JSON.stringify({ error: "Falha ao registrar contato" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 3. Cria o pedido inicial na tabela 'orders' com status 'pending'
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        contact_id: contact.id,
-        total_cents: totalCents,
-        status: "pending",
-      })
-      .select("id")
-      .single();
-
-    if (orderError || !order) {
-      return new Response(JSON.stringify({ error: "Falha ao gerar pedido no banco" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 4. Vincula os itens do carrinho ao pedido gerado na tabela 'order_items'
-    const orderItemsPayload = paidEbooks.map((ebook) => ({
-      order_id: order.id,
-      ebook_id: ebook.id,
-      price_cents: ebook.price_cents,
-    }));
-
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItemsPayload);
-
-    if (itemsError) {
-      return new Response(JSON.stringify({ error: "Falha ao vincular itens ao pedido" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 5. Monta os itens formatados exigidos pela API do PagSeguro v4
-    // O PagSeguro pede o valor unitário (unit_amount) em centavos inteiros
-    const pagSeguroItems = paidEbooks.map((ebook) => ({
-      reference_id: ebook.id,
-      name: ebook.title,
-      quantity: 1,
-      unit_amount: ebook.price_cents,
-    }));
-
-    // 6. Faz a chamada HTTP para gerar a sessão de checkout no PagSeguro
-    const pagSeguroPayload = {
-      reference_id: order.id, // ID do pedido para bater com o webhook depois
-      customer: {
-        name: name || "Cliente Cristo Ensina",
-        email: email,
-      },
-      items: pagSeguroItems,
-      payment_methods: [
-        { type: "PIX" },
-        { type: "CREDIT_CARD" },
-        { type: "BOLETO" }
-      ],
-      redirect_url: `${SITE_URL}/sucesso?order_id=${order.id}`,
-    };
-
-    const pagSeguroRes = await fetch("https://pagseguro.com", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${PAGSEGURO_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(pagSeguroPayload),
-    });
-
-    // Nota: Se for usar ambiente de testes, mude a URL acima para: https://pagseguro.com
-
-    const pagSeguroData = await pagSeguroRes.json();
-
-    if (!pagSeguroRes.ok) {
-      console.error("Erro PagSeguro:", pagSeguroData);
-      return new Response(
-        JSON.stringify({ error: "Falha ao gerar link de pagamento no PagSeguro" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Procura o link correto de redirecionamento retornado pelo PagSeguro
-    const checkoutUrl = pagSeguroData.links?.find((l: any) => l.rel === "PAY")?.href;
-
-    if (!checkoutUrl) {
-      return new Response(
-        JSON.stringify({ error: "Link de pagamento não retornado pelo provedor" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Salva a URL e identificador externo no pedido para controle
-    await supabase
-      .from("orders")
-      .update({ payment_provider_id: pagSeguroData.id })
-      .eq("id", order.id);
-
-    // Retorna a URL para o seu front-end (carrinho/page.tsx) fazer o redirecionamento imediato
-    return new Response(
-      JSON.stringify({ checkout_url: checkoutUrl, order_id: order.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    const supabase = createClient(
+      SUPABASE_URL,
+      SERVICE_ROLE_KEY,
     );
 
-  } catch (err) {
-    console.error("Erro interno na função:", err);
-    return new Response(JSON.stringify({ error: "Erro interno no servidor" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // ============================================================
+    // 1. BUSCAR E-BOOKS PUBLICADOS
+    // ============================================================
+
+    const { data: ebooks, error: ebooksError } =
+      await supabase
+        .from("ebooks")
+        .select(
+          "id, title, price_cents, status",
+        )
+        .in("id", ebookIds)
+        .eq("status", "published");
+
+    if (ebooksError) {
+      console.error(
+        "Erro ao buscar ebooks:",
+        ebooksError,
+      );
+
+      return jsonResponse(
+        { error: "Erro ao consultar os e-books." },
+        500,
+      );
+    }
+
+    if (!ebooks || ebooks.length === 0) {
+      return jsonResponse(
+        {
+          error:
+            "Nenhum e-book válido encontrado.",
+        },
+        404,
+      );
+    }
+
+    // ============================================================
+    // 2. SOMENTE E-BOOKS PAGOS
+    // ============================================================
+
+    const paidEbooks = ebooks.filter(
+      (ebook) =>
+        Number(ebook.price_cents) > 0,
+    );
+
+    if (paidEbooks.length === 0) {
+      return jsonResponse(
+        {
+          error:
+            "Os itens selecionados são gratuitos. Utilize o fluxo de material grátis.",
+        },
+        400,
+      );
+    }
+
+    const totalCents = paidEbooks.reduce(
+      (total, ebook) =>
+        total + Number(ebook.price_cents),
+      0,
+    );
+
+    // ============================================================
+    // 3. CRIAR / ATUALIZAR CONTATO
+    // ============================================================
+
+    const { data: contact, error: contactError } =
+      await supabase
+        .from("contacts")
+        .upsert(
+          {
+            email,
+            name,
+            source: "checkout-pagbank",
+          },
+          {
+            onConflict: "email",
+            ignoreDuplicates: false,
+          },
+        )
+        .select("id")
+        .single();
+
+    if (contactError || !contact) {
+      console.error(
+        "Erro ao criar contato:",
+        contactError,
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "Falha ao registrar os dados do comprador.",
+        },
+        500,
+      );
+    }
+
+    // ============================================================
+    // 4. CRIAR PEDIDO LOCAL
+    // ============================================================
+
+    const { data: order, error: orderError } =
+      await supabase
+        .from("orders")
+        .insert({
+          contact_id: contact.id,
+          status: "pending",
+          total_cents: totalCents,
+          payment_provider: "pagbank",
+        })
+        .select("id")
+        .single();
+
+    if (orderError || !order) {
+      console.error(
+        "Erro ao criar pedido:",
+        orderError,
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "Falha ao criar o pedido.",
+        },
+        500,
+      );
+    }
+
+    // ============================================================
+    // 5. CRIAR ITENS DO PEDIDO
+    // ============================================================
+
+    const orderItems = paidEbooks.map(
+      (ebook) => ({
+        order_id: order.id,
+        ebook_id: ebook.id,
+        unit_price_cents:
+          Number(ebook.price_cents),
+      }),
+    );
+
+    const {
+      error: orderItemsError,
+    } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+
+    if (orderItemsError) {
+      console.error(
+        "Erro ao criar itens do pedido:",
+        orderItemsError,
+      );
+
+      // Evita deixar pedido órfão.
+      await supabase
+        .from("orders")
+        .delete()
+        .eq("id", order.id);
+
+      return jsonResponse(
+        {
+          error:
+            "Falha ao registrar os itens do pedido.",
+        },
+        500,
+      );
+    }
+
+    // ============================================================
+    // 6. CRIAR CHECKOUT PAGBANK
+    // ============================================================
+
+    const checkoutPayload = {
+      reference_id: order.id,
+
+      items: paidEbooks.map(
+        (ebook) => ({
+          name: ebook.title,
+          quantity: 1,
+          unit_amount:
+            Number(ebook.price_cents),
+        }),
+      ),
+
+      customer_modifiable: true,
+
+      redirect_url:
+        `${SITE_URL}/obrigado?order=${order.id}`,
+
+      return_url:
+        `${SITE_URL}/carrinho`,
+
+      notification_urls: [
+        `${SUPABASE_URL}/functions/v1/confirm-payment`,
+      ],
+
+      payment_notification_urls: [
+        `${SUPABASE_URL}/functions/v1/confirm-payment`,
+      ],
+    };
+
+    console.log(
+      "Criando checkout PagBank para pedido:",
+      order.id,
+    );
+
+    const pagbankResponse = await fetch(
+      "https://api.pagseguro.com/checkouts",
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            `Bearer ${PAGSEGURO_TOKEN}`,
+          "Content-Type":
+            "application/json",
+          Accept: "application/json",
+        },
+
+        body: JSON.stringify(
+          checkoutPayload,
+        ),
+      },
+    );
+
+    const pagbankData =
+      await pagbankResponse.json();
+
+    console.log(
+      "Resposta PagBank:",
+      JSON.stringify(
+        pagbankData,
+      ),
+    );
+
+    if (!pagbankResponse.ok) {
+      console.error(
+        "Erro PagBank:",
+        pagbankData,
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "Falha ao criar checkout no PagBank.",
+          details: pagbankData,
+          order_id: order.id,
+        },
+        502,
+      );
+    }
+
+    // ============================================================
+    // 7. ENCONTRAR LINK PAY
+    // ============================================================
+
+    const payLink =
+      Array.isArray(pagbankData.links)
+        ? pagbankData.links.find(
+            (link: {
+              rel?: string;
+              href?: string;
+            }) =>
+              link.rel === "PAY" &&
+              typeof link.href ===
+                "string",
+          )
+        : null;
+
+    if (!payLink?.href) {
+      console.error(
+        "PagBank não retornou link PAY:",
+        pagbankData,
+      );
+
+      return jsonResponse(
+        {
+          error:
+            "PagBank não retornou o link de pagamento.",
+          details: pagbankData,
+          order_id: order.id,
+        },
+        502,
+      );
+    }
+
+    // ============================================================
+    // 8. SALVAR ID DO CHECKOUT
+    // ============================================================
+
+    await supabase
+      .from("orders")
+      .update({
+        payment_provider_id:
+          pagbankData.id ?? null,
+      })
+      .eq("id", order.id);
+
+    // ============================================================
+    // 9. DEVOLVER PARA O FRONTEND
+    // ============================================================
+
+    return jsonResponse({
+      checkout_url: payLink.href,
+      order_id: order.id,
+      provider: "pagbank",
     });
+  } catch (error) {
+    console.error(
+      "Erro inesperado create-order:",
+      error,
+    );
+
+    return jsonResponse(
+      {
+        error:
+          "Erro interno ao criar o checkout.",
+        details:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
+      500,
+    );
   }
 });
