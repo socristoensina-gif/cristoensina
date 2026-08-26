@@ -21,18 +21,24 @@ export default function CarrinhoPage() {
     setError("");
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-asaas-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          ebook_ids: items.map((i) => i.ebook_id),
-          email,
-          name,
-        }),
-      });
+  const res = await fetch("/api/stripe-checkout", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    ebook_ids: items.map((i) => i.ebook_id),
+    email,
+    name,
+    items: items.map((i) => ({
+      ebook_id: i.ebook_id,
+      title: i.title,
+      price_cents: i.price_cents,
+    })),
+  }),
+});
+
+
       const data = await res.json();
 
       if (!res.ok) {

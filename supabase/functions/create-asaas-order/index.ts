@@ -10,7 +10,7 @@ const ASAAS_API_KEY = Deno.env.get(
 )!;
 
 const ASAAS_URL =
-  "https://sandbox.asaas.com/api/v3";
+  "https://api-sandbox.asaas.com/v3";
 
 const SITE_URL =
   Deno.env.get("SITE_URL") ??
