@@ -27,7 +27,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* HERO */}
+      {/* HERO — direto, sem timidez */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="grid items-center gap-10 md:grid-cols-2">
           <div>
@@ -72,6 +72,65 @@ export default async function HomePage() {
 
       <div className="book-divider"><span>❧</span></div>
 
+      {/* BLOCO PRINCIPAL — SEJA PARCEIRO (assertivo, sem rodeio) */}
+      <section className="bg-[var(--color-petrol)] py-16 text-[var(--color-cream-light)]">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-gold)]">
+            Pregar o Evangelho custa dinheiro. E tudo bem falar disso.
+          </p>
+          <h2 className="font-display mt-4 text-3xl font-semibold sm:text-4xl">
+            Faça parte do Jesus Ensina
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-[var(--color-cream-light)]/85">
+            Cada vídeo, cada e-book, cada estudo que chega até você tem um custo real —
+            equipamento, tempo, estrutura. Se essa mensagem já tocou sua vida, você pode
+            ser parte de quem sustenta ela chegando em mais gente. Sem obrigação, sem
+            cobrança — só quem quiser e puder.
+          </p>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            {[5, 10, 20, 50, 100].map((value) => (
+              <Link
+                key={value}
+                href={`/parceiro?valor=${value}`}
+                className="rounded-full bg-[var(--color-gold)] px-6 py-3 font-semibold text-white transition hover:opacity-90"
+              >
+                R$ {value}/mês
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
+            <Link href="/parceiro" className="underline underline-offset-4 hover:text-[var(--color-gold)]">
+              Ver todos os planos de parceria →
+            </Link>
+            <Link href="/oferta" className="underline underline-offset-4 hover:text-[var(--color-gold)]">
+              Prefiro fazer uma oferta única via Pix →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* EQUIPAMENTOS — pedido concreto, sem soar deslocado */}
+      <section className="mx-auto max-w-4xl px-4 py-14 text-center sm:px-6">
+        <h2 className="font-display text-2xl font-semibold text-[var(--color-petrol)]">
+          Estamos montando nosso estúdio para fazer lives
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-[var(--color-ink)]/80">
+          Microfone, placa de captura, iluminação, equipamento de gravação — cada peça
+          nos aproxima de transmitir ao vivo e atender a comunidade em tempo real. Se
+          você tem algo parado em casa ou quer ajudar com isso, queremos saber.
+        </p>
+        <Link
+          href="/equipamentos"
+          className="mt-6 inline-block rounded-full border-2 border-[var(--color-petrol)] px-6 py-3 font-semibold text-[var(--color-petrol)] transition hover:bg-[var(--color-petrol)] hover:text-white"
+        >
+          Ver o que precisamos
+        </Link>
+      </section>
+
+      <div className="book-divider"><span>❧</span></div>
+
       {/* AVISO — ÁREA DE MEMBROS EM BREVE */}
       <section className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <div className="rounded-2xl border-2 border-dashed border-[var(--color-gold)]/50 bg-[var(--color-gold)]/10 p-6 text-center">
@@ -88,7 +147,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ANÚNCIOS DINÂMICOS — lives e campanhas */}
+      {/* ANÚNCIOS DINÂMICOS */}
       {announcements && announcements.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h2 className="font-display text-2xl font-semibold text-[var(--color-petrol)]">
@@ -190,7 +249,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* COMPARTILHAR */}
       <section className="mx-auto max-w-2xl px-4 py-12 text-center sm:px-6">
         <h2 className="font-display text-xl font-semibold text-[var(--color-petrol)]">
           Ajude essa mensagem a chegar mais longe
@@ -201,23 +259,6 @@ export default async function HomePage() {
         <div className="mt-5">
           <ShareButtons />
         </div>
-      </section>
-
-      {/* CTA FINAL — OFERTA */}
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
-        <h2 className="font-display text-2xl font-semibold text-[var(--color-petrol)]">
-          Esse trabalho vive de quem acredita nele
-        </h2>
-        <p className="mx-auto mt-3 max-w-xl text-[var(--color-ink)]/80">
-          Se esse ensino tem feito diferença na sua vida, considere fazer uma oferta para
-          o projeto continuar alcançando mais gente.
-        </p>
-        <Link
-          href="/oferta"
-          className="mt-6 inline-block rounded-full bg-[var(--color-gold)] px-6 py-3 font-semibold text-white transition hover:opacity-90"
-        >
-          Fazer uma oferta via Pix
-        </Link>
       </section>
     </div>
   );
