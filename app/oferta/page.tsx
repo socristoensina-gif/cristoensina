@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PixQrCode from "@/components/PixQrCode";
 
 export default function OfertaPage() {
@@ -5,34 +6,56 @@ export default function OfertaPage() {
   const merchantName = process.env.NEXT_PUBLIC_PIX_MERCHANT_NAME ?? "JESUS ENSINA";
   const merchantCity = process.env.NEXT_PUBLIC_PIX_MERCHANT_CITY ?? "RIO DE JANEIRO";
 
-  if (!pixKey) {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6">
-        <h1 className="font-display text-3xl font-semibold text-[var(--color-petrol)]">
-          Fazer uma Oferta
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+      <div className="text-center">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-gold)]">
+          Oferta & Patrocínio
+        </p>
+        <h1 className="font-display mt-2 text-3xl font-semibold text-[var(--color-petrol)]">
+          Seja um Patrocinador do nosso Projeto Evangelístico e ajude a salvar almas!
         </h1>
-        <p className="mt-4 text-[var(--color-ink)]/75">
-          A chave Pix ainda não foi configurada. Assim que estiver pronta, o QR Code
-          aparece automaticamente aqui.
+        <p className="mx-auto mt-3 max-w-xl text-[var(--color-ink)]/75">
+          Duas formas de ajudar, sem obrigação — escolha a que fizer sentido pra você.
         </p>
       </div>
-    );
-  }
 
-  return (
-    <div className="mx-auto max-w-xl px-4 py-16 sm:px-6">
-      <div className="text-center">
-        <h1 className="font-display text-3xl font-semibold text-[var(--color-petrol)]">
-          Fazer uma Oferta
-        </h1>
-        <p className="mt-3 text-[var(--color-ink)]/75">
-          Esse trabalho vive de quem acredita nele. Toda oferta ajuda a levar a Palavra
-          para mais gente que não teria tempo de buscar sozinha.
+      <div className="mt-10 rounded-2xl bg-[var(--color-petrol)] p-8 text-center text-[var(--color-cream-light)]">
+        <p className="font-display text-xl font-semibold">Patrocínio Mensal</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-cream-light)]/85">
+          A forma que mais sustenta o projeto a longo prazo — um valor fixo todo mês,
+          direto no cartão. Cancele quando quiser, sem burocracia.
         </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {[5, 10, 20, 50, 100].map((value) => (
+            <Link
+              key={value}
+              href={`/parceiro?valor=${value}`}
+              className="rounded-full bg-[var(--color-gold)] px-5 py-2.5 text-sm font-semibold"
+            >
+              R$ {value}/mês
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="mt-8">
-        <PixQrCode pixKey={pixKey} merchantName={merchantName} merchantCity={merchantCity} />
+        <p className="text-center font-display text-xl font-semibold text-[var(--color-petrol)]">
+          Ou faça uma Oferta Única via Pix
+        </p>
+        <p className="mx-auto mt-2 max-w-md text-center text-sm text-[var(--color-ink)]/70">
+          Sem cadastro, sem cartão — pague na hora, com o valor que quiser.
+        </p>
+
+        {!pixKey ? (
+          <p className="mt-6 text-center text-[var(--color-ink)]/70">
+            A chave Pix ainda não foi configurada.
+          </p>
+        ) : (
+          <div className="mt-6">
+            <PixQrCode pixKey={pixKey} merchantName={merchantName} merchantCity={merchantCity} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ function ParceiroForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState("");
 
-    const effectiveAmount = selected ?? (parseFloat(customAmount.replace(",", ".")) || 0);
+  const effectiveAmount = selected ?? (parseFloat(customAmount.replace(",", ".")) || 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +55,7 @@ function ParceiroForm() {
   return (
     <div className="mx-auto max-w-lg px-4 py-16 sm:px-6">
       <h1 className="font-display text-center text-3xl font-semibold text-[var(--color-petrol)]">
-        Seja um Parceiro do Jesus Ensina
+        Seja um Patrocinador do Jesus Ensina
       </h1>
       <p className="mt-3 text-center text-[var(--color-ink)]/80">
         Uma contribuição mensal, voluntária, no valor que você escolher. Você pode
@@ -126,7 +126,7 @@ function ParceiroForm() {
         >
           {status === "loading"
             ? "Processando..."
-            : `Ser parceiro com R$ ${effectiveAmount > 0 ? effectiveAmount.toFixed(2) : "0,00"}/mês`}
+            : `Ser patrocinador com R$ ${effectiveAmount > 0 ? effectiveAmount.toFixed(2) : "0,00"}/mês`}
         </button>
 
         <p className="text-center text-xs text-[var(--color-ink)]/60">

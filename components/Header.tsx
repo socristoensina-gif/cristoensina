@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { href: "/loja", label: "E-books" },
   { href: "/gratis", label: "Materiais Grátis" },
   { href: "/redes", label: "Redes Sociais" },
-  { href: "/oferta", label: "Oferta" },
+  { href: "/oferta", label: "Oferta & Patrocínio" },
   { href: "/contato", label: "Contato" },
 ];
 

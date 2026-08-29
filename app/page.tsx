@@ -27,12 +27,12 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* HERO — direto, sem timidez */}
+      {/* HERO — os 3 caminhos possíveis, todos visíveis sem rolar */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="grid items-center gap-10 md:grid-cols-2">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-gold)]">
-              Igreja para quem não tem tempo
+              Projeto Evangelístico Jesus Ensina — PROEJE
             </p>
             <h1 className="font-display mt-3 text-4xl font-semibold leading-tight text-[var(--color-petrol)] sm:text-5xl">
               Uma pausa diária com a Palavra.
@@ -41,19 +41,25 @@ export default async function HomePage() {
               Ensino bíblico rápido, direto ao ponto — pra quem não tem tempo, mas não
               abre mão da fé. Com o Pastor João Luiz Silva.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/videos"
-                className="rounded-full bg-[var(--color-petrol)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--color-petrol-dark)]"
+                className="rounded-full bg-[var(--color-petrol)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-petrol-dark)]"
               >
                 Assistir aos vídeos
               </Link>
               <Link
-                href="/gratis"
-                className="rounded-full border-2 border-[var(--color-petrol)] px-6 py-3 font-semibold text-[var(--color-petrol)] transition hover:bg-[var(--color-petrol)] hover:text-white"
+                href="/loja"
+                className="rounded-full border-2 border-[var(--color-petrol)] px-5 py-3 font-semibold text-[var(--color-petrol)] transition hover:bg-[var(--color-petrol)] hover:text-white"
               >
-                Baixar e-book grátis
+                E-books
               </Link>
+              <a
+                href="#apoie"
+                className="rounded-full bg-[var(--color-gold)] px-5 py-3 font-semibold text-white transition hover:opacity-90"
+              >
+                Doações
+              </a>
             </div>
           </div>
           <div className="flex justify-center">
@@ -72,54 +78,67 @@ export default async function HomePage() {
 
       <div className="book-divider"><span>❧</span></div>
 
-      {/* BLOCO PRINCIPAL — SEJA PARCEIRO (assertivo, sem rodeio) */}
-      <section className="bg-[var(--color-petrol)] py-16 text-[var(--color-cream-light)]">
+      {/* BLOCO DE APOIO — âncora do botão "Doações" do hero */}
+      <section id="apoie" className="bg-[var(--color-petrol)] py-16 text-[var(--color-cream-light)]">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-gold)]">
             Pregar o Evangelho custa dinheiro. E tudo bem falar disso.
           </p>
           <h2 className="font-display mt-4 text-3xl font-semibold sm:text-4xl">
-            Faça parte do Jesus Ensina
+            Seja um Patrocinador do nosso Projeto Evangelístico e ajude a salvar almas!
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[var(--color-cream-light)]/85">
-            Cada vídeo, cada e-book, cada estudo que chega até você tem um custo real —
-            equipamento, tempo, estrutura. Se essa mensagem já tocou sua vida, você pode
-            ser parte de quem sustenta ela chegando em mais gente. Sem obrigação, sem
-            cobrança — só quem quiser e puder.
+            Cada vídeo, cada e-book, cada estudo que chega até você tem um custo real.
+            Você pode contribuir de duas formas — sem obrigação, sem cobrança, só quem
+            quiser e puder:
           </p>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {[5, 10, 20, 50, 100].map((value) => (
-              <Link
-                key={value}
-                href={`/parceiro?valor=${value}`}
-                className="rounded-full bg-[var(--color-gold)] px-6 py-3 font-semibold text-white transition hover:opacity-90"
-              >
-                R$ {value}/mês
+          <div className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl bg-white/10 p-6">
+              <p className="font-display text-lg font-semibold">Patrocínio mensal</p>
+              <p className="mt-1 text-sm text-[var(--color-cream-light)]/80">
+                Um valor fixo todo mês, no cartão. Cancele quando quiser.
+              </p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {[5, 10, 20, 50, 100].map((value) => (
+                  <Link
+                    key={value}
+                    href={`/parceiro?valor=${value}`}
+                    className="rounded-full bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold"
+                  >
+                    R$ {value}
+                  </Link>
+                ))}
+              </div>
+              <Link href="/parceiro" className="mt-4 inline-block text-sm underline underline-offset-4">
+                Ver todos os planos →
               </Link>
-            ))}
-          </div>
+            </div>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
-            <Link href="/parceiro" className="underline underline-offset-4 hover:text-[var(--color-gold)]">
-              Ver todos os planos de parceria →
-            </Link>
-            <Link href="/oferta" className="underline underline-offset-4 hover:text-[var(--color-gold)]">
-              Prefiro fazer uma oferta única via Pix →
-            </Link>
+            <div className="rounded-2xl bg-white/10 p-6">
+              <p className="font-display text-lg font-semibold">Oferta única via Pix</p>
+              <p className="mt-1 text-sm text-[var(--color-cream-light)]/80">
+                Um valor avulso, na hora, sem cadastro nem cartão.
+              </p>
+              <Link
+                href="/oferta"
+                className="mt-6 inline-block rounded-full border-2 border-white px-6 py-2.5 text-sm font-semibold"
+              >
+                Fazer oferta via Pix
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* EQUIPAMENTOS — pedido concreto, sem soar deslocado */}
+      {/* EQUIPAMENTOS */}
       <section className="mx-auto max-w-4xl px-4 py-14 text-center sm:px-6">
         <h2 className="font-display text-2xl font-semibold text-[var(--color-petrol)]">
           Estamos montando nosso estúdio para fazer lives
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-[var(--color-ink)]/80">
           Microfone, placa de captura, iluminação, equipamento de gravação — cada peça
-          nos aproxima de transmitir ao vivo e atender a comunidade em tempo real. Se
-          você tem algo parado em casa ou quer ajudar com isso, queremos saber.
+          nos aproxima de transmitir ao vivo e atender a comunidade em tempo real.
         </p>
         <Link
           href="/equipamentos"
@@ -147,7 +166,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ANÚNCIOS DINÂMICOS */}
       {announcements && announcements.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h2 className="font-display text-2xl font-semibold text-[var(--color-petrol)]">
@@ -177,7 +195,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* VÍDEOS RECENTES */}
       {videos.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <div className="flex items-center justify-between">
@@ -214,34 +231,23 @@ export default async function HomePage() {
 
       <div className="book-divider"><span>❧</span></div>
 
-      {/* LOJA EM DESTAQUE */}
       {featuredEbooks && featuredEbooks.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-2xl font-semibold text-[var(--color-petrol)]">
-              Aprofunde-se com nossos e-books
+              E-books
             </h2>
             <Link href="/loja" className="text-sm font-semibold text-[var(--color-petrol)] hover:underline">
               Ver catálogo →
             </Link>
           </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-3">
+          <div className="mt-6 grid grid-cols-3 gap-4">
             {featuredEbooks.map((ebook) => (
-              <Link
-                key={ebook.id}
-                href={`/loja/${ebook.slug}`}
-                className="overflow-hidden rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-cream-light)] shadow-sm transition hover:shadow-md"
-              >
-                <div className="relative aspect-[3/4] bg-[var(--color-cream)]">
+              <Link key={ebook.id} href={`/loja/${ebook.slug}`} className="group block">
+                <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[var(--color-cream-light)] shadow-sm transition group-hover:shadow-lg">
                   {ebook.cover_image_url && (
-                    <Image src={ebook.cover_image_url} alt={ebook.title} fill className="object-cover" />
+                    <Image src={ebook.cover_image_url} alt={ebook.title} fill className="object-cover transition group-hover:scale-105" />
                   )}
-                </div>
-                <div className="p-4">
-                  <p className="font-display font-semibold text-[var(--color-petrol)]">{ebook.title}</p>
-                  <p className="mt-1 text-sm text-[var(--color-leather)]">
-                    {ebook.price_cents === 0 ? "Grátis" : `R$ ${(ebook.price_cents / 100).toFixed(2)}`}
-                  </p>
                 </div>
               </Link>
             ))}
@@ -253,9 +259,6 @@ export default async function HomePage() {
         <h2 className="font-display text-xl font-semibold text-[var(--color-petrol)]">
           Ajude essa mensagem a chegar mais longe
         </h2>
-        <p className="mt-2 text-sm text-[var(--color-ink)]/70">
-          Compartilhe o Jesus Ensina com alguém que precisa ouvir isso hoje.
-        </p>
         <div className="mt-5">
           <ShareButtons />
         </div>
