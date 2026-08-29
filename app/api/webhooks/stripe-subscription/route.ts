@@ -55,7 +55,9 @@ export async function POST(request: Request) {
 
       // Cobrança mensal seguinte falhou (cartão recusado, sem saldo, etc.)
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | null
+        }
         const subscriptionId = invoice.subscription?.toString()
         if (!subscriptionId) break
 
