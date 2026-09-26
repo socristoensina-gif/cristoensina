@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,7 +18,7 @@ const LIVRO_1 = {
 };
 
 const LIVRO_2 = {
-  titulo: "Cains Vigilantes, Dilúvio e Babel",
+  titulo: "Caim, Vigilantes, Dilúvio e Babel",
   subtitulo: "Volume 2 — Juízo, Povos Antigos, Babel",
   hook: "Um dilúvio que apagou um mundo inteiro. Uma torre que desafiou os céus. O que ficou de fora da história que te contaram?",
   links: [
@@ -104,8 +103,8 @@ export default function VerdadesOcultasPage() {
               ))}
             </div>
           </div>
-          <div className="relative order-1 aspect-square overflow-hidden rounded-2xl shadow-xl sm:order-2">
-            <Image src="/verdades-ocultas/arca.png" alt="A família no interior da arca" fill className="object-cover" />
+          <div className="relative order-1 aspect-[3/4] overflow-hidden rounded-2xl shadow-xl sm:order-2">
+            <Image src="/verdades-ocultas/livro%201.png" alt="Capa do livro Criação, Éden e a Ruptura" fill className="object-cover" />
           </div>
         </div>
       </section>
@@ -113,8 +112,8 @@ export default function VerdadesOcultasPage() {
       {/* LIVRO 2 */}
       <section className="bg-[var(--color-leather)] py-16 text-white">
         <div className="mx-auto grid max-w-4xl items-center gap-8 px-5 sm:grid-cols-2 sm:px-6">
-          <div className="relative aspect-square overflow-hidden rounded-2xl shadow-xl">
-            <Image src="/verdades-ocultas/queda-imperio.png" alt="A queda de um grande império" fill className="object-cover" />
+          <div className="relative aspect-[3/4] overflow-hidden rounded-2xl shadow-xl">
+            <Image src="/verdades-ocultas/livro%202.png" alt="Capa do livro Caim, Vigilantes, Dilúvio e Babel" fill className="object-cover" />
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-gold)]">
@@ -137,25 +136,6 @@ export default function VerdadesOcultasPage() {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* AUTOR / PONTE PARA O JESUS ENSINA */}
-      <section className="bg-[var(--color-cream)] py-16 text-center">
-        <div className="mx-auto max-w-2xl px-5 sm:px-6">
-          <p className="font-display text-xl font-semibold text-[var(--color-petrol)]">
-            Escrito por Pr. J.L. Silva
-          </p>
-          <p className="mt-3 text-[var(--color-ink)]/80">
-            Autor da coleção e criador do Jesus Ensina — ensino bíblico direto ao ponto,
-            todos os dias, para quem não tem tempo mas não abre mão da fé.
-          </p>
-          <Link
-            href="/"
-            className="mt-6 inline-block rounded-full border-2 border-[var(--color-petrol)] px-6 py-3 font-semibold text-[var(--color-petrol)] transition hover:bg-[var(--color-petrol)] hover:text-white"
-          >
-            Conheça o Jesus Ensina
-          </Link>
         </div>
       </section>
 
