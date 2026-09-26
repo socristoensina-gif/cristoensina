@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import { CartProvider } from "@/components/CartProvider";
 import CookieConsent from "@/components/CookieConsent";
 import "./globals.css";
@@ -33,9 +32,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${fraunces.variable} ${inter.variable}`}>
         <CartProvider>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
+          <SiteChrome>{children}</SiteChrome>
         </CartProvider>
         <CookieConsent />
       </body>
