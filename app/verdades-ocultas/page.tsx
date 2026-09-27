@@ -1,5 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Metadata } from "next";
+import HeroVideo from "@/components/HeroVideo";
 
 export const metadata: Metadata = {
   title: "Verdades Ocultas da Bíblia | Coleção de Pr. J.L. Silva",
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 const LIVRO_1 = {
   titulo: "Criação, Éden e a Ruptura",
   subtitulo: "Volume 1 — Origens, Humanidade, A Queda",
-  hook: "Antes da queda, havia um propósito. O que realmente se perdeu no Éden — e por quê?",
+  hook: "Antes da queda, havia um propósito diferente de tudo que te ensinaram. O que foi apagado da história do Éden — e por que ninguém fala sobre isso?",
   links: [
     { label: "Ler no Kindle", href: "https://www.amazon.com.br/dp/B0HL1YD54Y" },
     { label: "Comprar capa comum", href: "https://www.amazon.com/dp/B0HL4HGY4P" },
@@ -18,9 +20,9 @@ const LIVRO_1 = {
 };
 
 const LIVRO_2 = {
-  titulo: "Caim, Vigilantes, Dilúvio e Babel",
+  titulo: "Cains Vigilantes, Dilúvio e Babel",
   subtitulo: "Volume 2 — Juízo, Povos Antigos, Babel",
-  hook: "Um dilúvio que apagou um mundo inteiro. Uma torre que desafiou os céus. O que ficou de fora da história que te contaram?",
+  hook: "Um mundo inteiro apagado por um dilúvio. Uma torre construída para desafiar o próprio céu. E uma pergunta que a igreja raramente responde: quem eram os Vigilantes?",
   links: [
     { label: "Ler no Kindle", href: "https://www.amazon.com.br/dp/B0HKYPJRM5" },
     { label: "Comprar capa comum", href: "https://www.amazon.com/dp/B0HL1PPK15" },
@@ -33,33 +35,25 @@ export default function VerdadesOcultasPage() {
     <div className="bg-[var(--color-ink)]">
       {/* HERO — imagem de impacto, sem menu competindo pela atenção */}
       <section className="relative flex min-h-[85vh] items-end overflow-hidden sm:min-h-screen">
-        <Image
-          src="/verdades-ocultas/diluvio.png"
-          alt="O Dilúvio"
-          fill
-          priority
-          className="object-cover object-top"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/10" />
+        <HeroVideo />
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/50 to-black/10" />
 
         <div className="relative z-10 mx-auto max-w-3xl px-5 pb-16 text-center sm:px-6 sm:pb-24">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-gold)] sm:text-sm">
             Coleção Verdades Ocultas da Bíblia
           </p>
           <h1 className="font-display mt-4 text-3xl font-bold leading-tight text-white sm:text-5xl">
-            O que a Bíblia diz de verdade — e ninguém te contou.
+            E se tudo que você aprendeu sobre o começo da humanidade for apenas parte da história?
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-white/85 sm:text-lg">
-            Origens, o Dilúvio, Babel, impérios que caíram por juízo — uma jornada pelas
-            perguntas que a maioria tem medo de fazer, com respostas direto do texto.
+            Existem capítulos da Bíblia que a maioria pula, perguntas que ninguém te
+            ensinou a fazer. Essa coleção não pula nada.
           </p>
           <a
-            href="https://www.amazon.com.br/s?k=Verdades+Ocultas+da+B%C3%ADblia+J.L.+Silva"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#colecao"
             className="mt-8 inline-block rounded-full bg-[var(--color-gold)] px-8 py-4 font-semibold text-white shadow-lg transition hover:opacity-90"
           >
-            Ver os livros na Amazon ↓
+            Descobrir a outra parte da história ↓
           </a>
         </div>
       </section>
@@ -71,12 +65,12 @@ export default function VerdadesOcultasPage() {
             <Image src="/verdades-ocultas/capas.png" alt="Coleção Verdades Ocultas da Bíblia" fill className="object-cover" priority />
           </div>
           <p className="font-display mt-8 text-2xl font-semibold text-[var(--color-petrol)] sm:text-3xl">
-            Mais que livros. Uma jornada para mentes que buscam.
+            Você já leu a Bíblia. Mas já leu ela assim?
           </p>
           <p className="mx-auto mt-3 max-w-xl text-[var(--color-ink)]/80">
-            Escrita por Pr. J.L. Silva, a coleção percorre o Antigo e o Novo Testamento
-            revelando o contexto histórico e espiritual por trás dos textos mais
-            desafiadores da Bíblia — direto ao ponto, sem enrolação teológica.
+            Pr. J.L. Silva escreveu essa coleção para quem não se contenta com a versão
+            resumida — o contexto histórico e espiritual por trás dos textos mais
+            desafiadores da Bíblia, direto ao ponto, sem enrolação teológica.
           </p>
         </div>
       </section>
@@ -104,9 +98,12 @@ export default function VerdadesOcultasPage() {
                 </a>
               ))}
             </div>
+            <p className="mt-3 text-xs text-white/60">
+              Livro físico vendido pela Amazon.com (EUA), com envio internacional para o Brasil.
+            </p>
           </div>
-          <div className="relative order-1 aspect-[3/4] overflow-hidden rounded-2xl shadow-xl sm:order-2">
-            <Image src="/verdades-ocultas/livro%201.png" alt="Capa do livro Criação, Éden e a Ruptura" fill className="object-cover" />
+          <div className="relative order-1 aspect-square overflow-hidden rounded-2xl shadow-xl sm:order-2">
+            <Image src="/verdades-ocultas/arca.png" alt="A família no interior da arca" fill className="object-cover" />
           </div>
         </div>
       </section>
@@ -114,8 +111,8 @@ export default function VerdadesOcultasPage() {
       {/* LIVRO 2 */}
       <section className="bg-[var(--color-leather)] py-16 text-white">
         <div className="mx-auto grid max-w-4xl items-center gap-8 px-5 sm:grid-cols-2 sm:px-6">
-          <div className="relative aspect-[3/4] overflow-hidden rounded-2xl shadow-xl">
-            <Image src="/verdades-ocultas/livro%202.png" alt="Capa do livro Caim, Vigilantes, Dilúvio e Babel" fill className="object-cover" />
+          <div className="relative aspect-square overflow-hidden rounded-2xl shadow-xl">
+            <Image src="/verdades-ocultas/queda-imperio.png" alt="A queda de um grande império" fill className="object-cover" />
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-gold)]">
@@ -141,11 +138,30 @@ export default function VerdadesOcultasPage() {
         </div>
       </section>
 
+      {/* AUTOR / PONTE PARA O JESUS ENSINA */}
+      <section className="bg-[var(--color-cream)] py-16 text-center">
+        <div className="mx-auto max-w-2xl px-5 sm:px-6">
+          <p className="font-display text-xl font-semibold text-[var(--color-petrol)]">
+            Escrito por Pr. J.L. Silva
+          </p>
+          <p className="mt-3 text-[var(--color-ink)]/80">
+            Autor da coleção e criador do Jesus Ensina — ensino bíblico direto ao ponto,
+            todos os dias, para quem não tem tempo mas não abre mão da fé.
+          </p>
+          <Link
+            href="/"
+            className="mt-6 inline-block rounded-full border-2 border-[var(--color-petrol)] px-6 py-3 font-semibold text-[var(--color-petrol)] transition hover:bg-[var(--color-petrol)] hover:text-white"
+          >
+            Conheça o Jesus Ensina
+          </Link>
+        </div>
+      </section>
+
       {/* CTA FINAL — repete todos os links, é o que decide a conversão de quem rolou tudo */}
       <section className="bg-black py-16 text-center text-white">
         <div className="mx-auto max-w-2xl px-5 sm:px-6">
           <h2 className="font-display text-2xl font-bold sm:text-3xl">
-            Escolha seu formato e comece a leitura hoje
+            A outra parte da história está a um clique de distância
           </h2>
 
           <div className="mt-8 space-y-6">
