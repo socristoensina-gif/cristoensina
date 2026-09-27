@@ -54,7 +54,9 @@ export default function VerdadesOcultasPage() {
             perguntas que a maioria tem medo de fazer, com respostas direto do texto.
           </p>
           <a
-            href="#colecao"
+            href="https://www.amazon.com.br/s?k=Verdades+Ocultas+da+B%C3%ADblia+J.L.+Silva"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-8 inline-block rounded-full bg-[var(--color-gold)] px-8 py-4 font-semibold text-white shadow-lg transition hover:opacity-90"
           >
             Ver os livros na Amazon ↓
